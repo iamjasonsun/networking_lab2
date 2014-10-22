@@ -22,12 +22,15 @@
 
 #define SOCKET_ERROR -1
 #define PKT_SIZE 1000
+#define ACK_BUFFER_SIZE 64
 
 /* function prototypes */
-void receiveDataFromServer(int sd, int flags, int timeOut, char *fileName);
+void receiveDataFromServer(int sd, int flags, int timeOut, char *fileName, float probability);
 int indexOfCharInString(char *str, int length, char ch);
 int parseHeader(char *packet, int headerLength, int *seqNum, int *pktMaxNum);
 int findHeaderLength(char *packet, int length);
+void sendAck(int sd, int seqNum, int flags, const struct sockaddr *echoServAddr, int echoLen);
+int lostAck(float pro);
 
 void error(char *msg)
 {
@@ -60,17 +63,22 @@ int isReadable(int sd,int * error,int timeOut) { // milliseconds
 int main(int argc, char *argv[]) {
   
   int sd, rc, flags, timeOut, portNum;
+  float probability;
   struct sockaddr_in cliAddr, remoteServAddr;
   struct hostent *h;
 
 
   /* check command line args */
-  if(argc<4) {
-    printf("usage : %s <server> <port_number> <filename> \n", argv[0]);
+  if(argc<5) {
+    printf("usage : %s <server> <port_number> <filename> <lost ACK probability>\n", argv[0]);
     exit(1);
   }
 
+  /*init srand*/
+  srand(time(NULL));
+
   portNum = atoi(argv[2]);
+  probability = atof(argv[4]);
 
   /* get server IP address (no check if input is IP address or DNS name */
   h = gethostbyname(argv[1]);
@@ -123,22 +131,24 @@ int main(int argc, char *argv[]) {
 
 /* BEGIN jcs 3/30/05 */
 
-  receiveDataFromServer(sd, flags, timeOut, argv[3]);
+  receiveDataFromServer(sd, flags, timeOut, argv[3], probability);
 
 /* END jcs 3/30/05 */
   return 1;
 }
 
-void receiveDataFromServer(int sd, int flags, int timeOut, char *fileName){
-	struct sockaddr_in echoServAddr;
+void receiveDataFromServer(int sd, int flags, int timeOut, char *fileName, float probability){
+	struct sockaddr echoServAddr;
 	int echoLen, errorL, receivedCount, headerLength, seqNum, pktMaxNum, n;
 	char buffer[PKT_SIZE];
 	FILE *fileId;
+	int preSeqNum = -1;
 	//open file to store reveived data
 	fileId = fopen(fileName,"w"); // write mode
 	if(fileId == NULL){error("Cannot open file on client.\n");}
 
 	//wait for data from server
+	printf("Waiting for data from server...");
 	while (!isReadable(sd,&errorL,timeOut)) printf(".");
 	printf("\n");
 	//reveive data from server; store them into buffer
@@ -149,10 +159,23 @@ void receiveDataFromServer(int sd, int flags, int timeOut, char *fileName){
 	headerLength = findHeaderLength(buffer, PKT_SIZE);if(headerLength<0){error("Invalid header.\n");}
 	errorL = parseHeader(buffer, headerLength, &seqNum, &pktMaxNum);if(errorL < 0){error("Error parsing header.\n");}
 	printf("Received packet %d.\n", seqNum);
+	//send ACK, simulate ACK lost
+	if(!lostAck(probability)){
+		sendAck(sd, seqNum, flags, &echoServAddr, echoLen);
+		printf("ACK%d sent.\n",seqNum);
+	}else{
+		printf("ACK%d sent.(will lost)\n",seqNum);
+	}
 	while(seqNum<pktMaxNum){
-		//write data into file
-		n = fwrite(buffer+headerLength, sizeof(char), receivedCount-headerLength, fileId);
-		if(n<0){error("Error writing data into file.\n");}
+		//check the received packet is duplicated or not
+		if(preSeqNum==seqNum){//duplicated
+			printf("Duplicated packet %d. Drop it.\n", seqNum);
+		}else{
+			//write data into file
+			n = fwrite(buffer+headerLength, sizeof(char), receivedCount-headerLength, fileId);
+			if(n<0){error("Error writing data into file.\n");}
+			preSeqNum = seqNum;
+		}
 		//wait for data from server
 		while (!isReadable(sd,&errorL,timeOut)) printf(".");
 		printf("\n");
@@ -163,14 +186,28 @@ void receiveDataFromServer(int sd, int flags, int timeOut, char *fileName){
 		//parse header
 		headerLength = findHeaderLength(buffer, PKT_SIZE);if(headerLength<0){error("Invalid header.\n");}
 		errorL = parseHeader(buffer, headerLength, &seqNum, &pktMaxNum);if(errorL < 0){error("Error parsing header.\n");}
-		printf("Received packet %d.\n", seqNum);		
+		printf("Received packet %d.\n", seqNum);
+		//send ACK, simulate ACK lost
+		if(!lostAck(probability)){
+			sendAck(sd, seqNum, flags, &echoServAddr, echoLen);
+			printf("ACK%d sent.\n",seqNum);
+		}else{
+			printf("ACK%d sent.(will lost)\n",seqNum);
+		}
 	}
 	//write data into file
 	n = fwrite(buffer+headerLength, sizeof(char), receivedCount-headerLength, fileId);
 	if(n<0){error("Error writing data into file.\n");}
 	//close file
 	fclose(fileId);
-	printf("Data successfully received.\n");
+	printf("All data successfully received.\n");
+}
+
+void sendAck(int sd, int seqNum, int flags, const struct sockaddr *echoServAddr, int echoLen){
+	int n;
+	char ackBuffer[ACK_BUFFER_SIZE];
+	n = sprintf(ackBuffer, "ACK %d", seqNum);if(n>ACK_BUFFER_SIZE){error("ACK buffer overflow.\n");}
+	n = sendto(sd,ackBuffer,n+1,flags,echoServAddr,echoLen);if(n<0){error("Cannot send ACK to server.\n");}
 }
 
 int findHeaderLength(char *packet, int length){
@@ -213,4 +250,11 @@ int indexOfCharInString(char *str, int length, char ch){
 		if(str[i] == ch){return i;}
 	}
 	return -1;
+}
+
+/*simulate ACK lost; return 1 if ack lost; return 0 if not*/
+int lostAck(float pro){
+	float rnd;
+	rnd = (float)rand() / (float)RAND_MAX;
+	return rnd < pro ? 1 : 0;
 }
