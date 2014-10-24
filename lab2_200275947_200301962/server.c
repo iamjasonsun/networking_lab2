@@ -32,6 +32,7 @@ int checkResendPacket(int sd, int timeout, char *ackBuffer, int flags, struct so
 int isExpectedACK(char *ackBuffer, int seqNum);
 int startTimer(int sd, int timeout);
 
+/* function implementation part1 */
 int isReadable(int sd,int * error,int timeOut) { // milliseconds
   fd_set socketReadSet;
   FD_ZERO(&socketReadSet);
@@ -129,8 +130,13 @@ int main(int argc, char *argv[]) {
 
 return 0;
 }
+
+/* function implementation part2 */
+
 /*
- *
+ *  Function: sendFileToClient
+ * --------------------
+ *  Read the requested file into buffer and send it to the client
  *
  */
 void sendFileToClient(char *fileName, int sd, int flags, struct sockaddr *cliAddr, int cliLen, float probability){
@@ -190,9 +196,14 @@ void sendFileToClient(char *fileName, int sd, int flags, struct sockaddr *cliAdd
 }
 
 /*
-Waiting for ACK from client; if timeout or received ACK is not expected, return 1 to indicate we need to resend the packet.
-Return 1 if we need to resent packet; return 0, if we do not need to resent
-*/
+ *  Function: checkResendPacket
+ * --------------------
+ *  Waiting for ACK from client; if timeout or received ACK is not expected, return 1 to indicate we need 
+ *    to resend the packet. Return 1 if we need to resent packet; return 0, if we do not need to resent
+ *
+ *
+ *
+ */
 int checkResendPacket(int sd, int timeout, char *ackBuffer, int flags, struct sockaddr *cliAddr, int *cliLenAdd, int seqNum){
 	int timerStatus, error;
 	//waiting for ACK from
@@ -216,7 +227,13 @@ int checkResendPacket(int sd, int timeout, char *ackBuffer, int flags, struct so
 	}
 }
 
-/*Return 1 if it is expected ACK; return 0 if it is not expected ACK*/
+/*
+ *  Function: isExpectedACK
+ * --------------------
+ *  Return 1 if it is expected ACK; return 0 if it is not expected ACK *
+ *
+ *
+ */
 int isExpectedACK(char *ackBuffer, int seqNum){
 	int receivedSeqNum;
 	if(!(ackBuffer[0]=='A'&&ackBuffer[1]=='C'&&ackBuffer[2]=='K'&&ackBuffer[3]==' '&&strlen(ackBuffer)>4)){
@@ -226,7 +243,13 @@ int isExpectedACK(char *ackBuffer, int seqNum){
 	return receivedSeqNum == seqNum ? 1 : 0;
 }
 
-/*Return 1 if timer stops before timeout; return 0 if timeout*/
+/*
+ *  Function: startTimer
+ * --------------------
+ *  Return 1 if timer stops before timeout; return 0 if timeout
+ *
+ *
+ */
 int startTimer(int sd, int timeout){
 	int error;
 	int timestep = 100;
@@ -239,6 +262,13 @@ int startTimer(int sd, int timeout){
 	return 1;
 }
 
+/*
+ *  Function: getFileSize
+ * --------------------
+ *  Get the size of file
+ *
+ *  *filePath: the path of specific file
+ */
 int getFileSize(char *filePath){
 	struct stat fst;
 	bzero(&fst,sizeof(fst));
@@ -246,7 +276,14 @@ int getFileSize(char *filePath){
 	return fst.st_size;
 }
 
-/*Simulate packet lost; return 1 if loss packet; return 0 if not*/
+/*
+ *  Function: lostPacket
+ * --------------------
+ *  Simulate packet lost; return 1 if loss packet; return 0 if not
+ *
+ *  pro: ??
+ *
+ */
 int lostPacket(float pro){
 	float rnd;
 	rnd = (float)rand() / (float)RAND_MAX;

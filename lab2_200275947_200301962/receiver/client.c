@@ -32,6 +32,7 @@ int findHeaderLength(char *packet, int length);
 void sendAck(int sd, int seqNum, int flags, const struct sockaddr *echoServAddr, int echoLen);
 int lostAck(float pro);
 
+/* function implementation */
 void error(char *msg)
 {
     perror(msg);
@@ -137,6 +138,20 @@ int main(int argc, char *argv[]) {
   return 1;
 }
 
+/* function implementation */
+
+/*
+ *  Function: receiveDataFromServer
+ * --------------------
+ *  This funciton will receive the package from server and put file into a buffer
+ *
+ *  sd: ?
+ *  flags: a mark to see whether the package is lost or not
+ *  timeOut: timeout period of pkg losing
+ *  *fileName: name of file to be sent
+ *  probability: the probability of package losing
+ *
+ */
 void receiveDataFromServer(int sd, int flags, int timeOut, char *fileName, float probability){
 	struct sockaddr echoServAddr;
 	int echoLen, errorL, receivedCount, headerLength, seqNum, pktMaxNum, n;
@@ -203,6 +218,18 @@ void receiveDataFromServer(int sd, int flags, int timeOut, char *fileName, float
 	printf("All data successfully received.\n");
 }
 
+/*
+ *  Function: sendAck
+ * --------------------
+ *  This funciton will return Ack number to ackBuffer
+ *
+ *  sd: ?
+ *  flags: a mark to report if function works
+ *  seqNum:
+ *  sockaddr *echoServAddr:
+ *  echoLen:
+ *
+ */
 void sendAck(int sd, int seqNum, int flags, const struct sockaddr *echoServAddr, int echoLen){
 	int n;
 	char ackBuffer[ACK_BUFFER_SIZE];
@@ -210,6 +237,15 @@ void sendAck(int sd, int seqNum, int flags, const struct sockaddr *echoServAddr,
 	n = sendto(sd,ackBuffer,n+1,flags,echoServAddr,echoLen);if(n<0){error("Cannot send ACK to server.\n");}
 }
 
+/*
+ *  Function: findHeaderLength
+ * --------------------
+ *  This funciton will return length of header
+ *
+ *  *packet: String of packet content
+ *  length: length of packet
+ *
+ */
 int findHeaderLength(char *packet, int length){
 	int i;	
 	for(i=0; i<length-3; i++){
@@ -220,6 +256,15 @@ int findHeaderLength(char *packet, int length){
 	return -1;
 }
 
+/*
+ *  Function: parseHeader
+ * --------------------
+ *  This funciton will parsing the header
+ *
+ *  *packet: String of packet content
+ *  length: length of packet
+ *
+ */
 int parseHeader(char *packet, int headerLength, int *seqNum, int *pktMaxNum){
 	int spaceIndex, i, lineBreakIndex, n;
 	char buffer[32];
@@ -244,6 +289,16 @@ int parseHeader(char *packet, int headerLength, int *seqNum, int *pktMaxNum){
 	return 0;
 }
 
+/*
+ *  Function: indexOfCharInString
+ * --------------------
+ *  This funciton will return the index of a perticular char in the str
+ *
+ *  *str: String which may contain ch
+ *  length: length of str
+ *  ch: the perticular char to be found
+ *
+ */
 int indexOfCharInString(char *str, int length, char ch){
 	int i;
 	for(i = 0; i<length; i++){
@@ -252,7 +307,15 @@ int indexOfCharInString(char *str, int length, char ch){
 	return -1;
 }
 
-/*simulate ACK lost; return 1 if ack lost; return 0 if not*/
+/*
+ *  Function: findHeaderLength
+ * --------------------
+ *  This function simulates ACK lost; return 1 if ack lost; return 0 if not
+ *
+ *  pro:
+ *
+ */
+
 int lostAck(float pro){
 	float rnd;
 	rnd = (float)rand() / (float)RAND_MAX;
