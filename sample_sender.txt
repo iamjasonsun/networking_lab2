@@ -1,0 +1,56 @@
+./server: waiting for data on port UDP 3333
+./server: from 127.0.0.1:UDP44714 : testFile 
+Sending data to client...
+
+Packet 1 is sent.
+Waiting for ACK from client...
+
+Received ACK1
+Packet 2 is sent.
+Waiting for ACK from client...
+
+Received ACK2
+Packet 3 is sent.
+Waiting for ACK from client...
+
+Received ACK3
+Packet 4 is sent.
+Waiting for ACK from client...
+
+Received ACK4
+Packet 5 is sent.
+Waiting for ACK from client...
+
+Received ACK5
+Packet 6 is sent.
+Waiting for ACK from client...
+
+Received ACK6
+Packet 7 is sent.
+Waiting for ACK from client...
+
+Received ACK7
+Packet 8 is sent. (will lost)
+Waiting for ACK from client.............
+Timeout waiting for ACK8.
+Packet 8 is resent.
+Waiting for ACK from client...
+
+Received ACK8
+Packet 9 is sent.
+Waiting for ACK from client...
+
+Received ACK9
+Packet 10 is sent.
+Waiting for ACK from client...
+
+Received ACK10
+Packet 11 is sent.
+Waiting for ACK from client...
+
+Received ACK11
+Packet 12 is sent.
+Waiting for ACK from client...
+
+Received ACK12
+All data successfully sent. 1 packets are retransmitted.
