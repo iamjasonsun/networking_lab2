@@ -129,7 +129,10 @@ int main(int argc, char *argv[]) {
 
 return 0;
 }
-
+/*
+ *
+ *
+ */
 void sendFileToClient(char *fileName, int sd, int flags, struct sockaddr *cliAddr, int cliLen, float probability){
 	FILE *fileId;
 	char packet[PKT_SIZE];
